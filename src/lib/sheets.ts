@@ -43,33 +43,38 @@ export const deleteOrderRows = async (receptionNumber: string, clientCIF: string
 };
 
 // Generic function to fetch data from Apps Script
-async function fetchFromScript<T>(action: string, params: Record<string, any> = {}): Promise<T> {
+const fetchFromScript = async <T>(action: string, params: Record<string, any> = {}): Promise<T> => {
   try {
+    
     const response = await fetch(SCRIPT_URL, {
       method: 'POST',
-      mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ action, ...params }),
+      body: JSON.stringify({
+        action,
+        ...params,
+      }),
     });
 
     if (!response.ok) {
+      console.error('[Sheets API] HTTP error:', response.status, response.statusText);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const result: ApiResponse<T> = await response.json();
 
     if (!result.success) {
+      console.error('[Sheets API] API error:', result.error);
       throw new Error(result.error || 'Unknown error occurred');
     }
 
     return result.data!;
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('[Sheets API] Error:', error);
     throw error;
   }
-}
+};
 
 // Export the API functions
 export const sheetsApi = {
@@ -77,9 +82,8 @@ export const sheetsApi = {
   fetchSheet,
   deleteOrderRows,
   appendToSheet: async (range: string, values: any[][]) => {
-    return fetchFromScript('appendRows', { range, values });
-  },
-  updateSheet: async (range: string, values: any[][]) => {
-    return fetchFromScript('updateRange', { range, values });
+    // Ensure range is in proper A1 notation format
+    const formattedRange = range.includes('!') ? range : `PEDIDOS!${range}`;
+    return fetchFromScript('appendRows', { range: formattedRange, values });
   }
 };

@@ -4,12 +4,14 @@ import { sheetsApi } from './sheets';
 // Fetch clients from the "CLIENTES" sheet
 export const fetchClientes = async (): Promise<Client[]> => {
   try {
-    const lastRow = await sheetsApi.getLastRowWithData('CLIENTES');
-    const values = await sheetsApi.fetchSheet(`CLIENTES!A2:E${lastRow}`);
+    // Usar un rango fijo grande (ej: hasta fila 1000) en lugar de lastRow
+    const values = await sheetsApi.fetchSheet('CLIENTES!A2:E1000');
     
-    return values.filter(row => row[0]).map((row: any[]) => ({
-      cif: String(row[0]).trim().toUpperCase(),
-      name: row[1],
+    return values
+      .filter(row => row[0] && row[0].toString().trim() !== '')
+      .map((row: any[]) => ({
+        cif: String(row[0]).trim().toUpperCase(),
+        name: row[1],
       address: row[2] || '',
       phone: row[3] || '',
       email: row[4] || ''
@@ -23,13 +25,15 @@ export const fetchClientes = async (): Promise<Client[]> => {
 // Fetch products from the "PRODUCTOS" sheet
 export const fetchProductos = async (): Promise<Product[]> => {
   try {
-    const lastRow = await sheetsApi.getLastRowWithData('PRODUCTOS');
-    const values = await sheetsApi.fetchSheet(`PRODUCTOS!A2:B${lastRow}`);
+    // Usar un rango fijo grande (ej: hasta fila 1000) en lugar de lastRow
+    const values = await sheetsApi.fetchSheet('PRODUCTOS!A2:B1000');
     
-    return values.filter(row => row[0]).map((row: any[]) => ({
-      id: String(row[0]).trim(),
-      name: row[1]
-    }));
+    return values
+      .filter(row => row[0] && row[0].toString().trim() !== '')
+      .map((row: any[]) => ({
+        id: String(row[0]).trim(),
+        name: row[1]
+      }));
   } catch (error) {
     console.error('Error fetching products:', error);
     return [];
@@ -39,12 +43,14 @@ export const fetchProductos = async (): Promise<Product[]> => {
 // Fetch palets from the "PALETS" sheet
 export const fetchPalets = async (): Promise<Palet[]> => {
   try {
-    const lastRow = await sheetsApi.getLastRowWithData('PALETS');
-    const values = await sheetsApi.fetchSheet(`PALETS!A2:B${lastRow}`);
+    // Usar un rango fijo grande (ej: hasta fila 1000) en lugar de lastRow
+    const values = await sheetsApi.fetchSheet('PALETS!A2:B1000');
     
-    return values.filter(row => row[0]).map((row: any[]) => ({
-      id: String(row[0]).trim(),
-      name: row[1]
+    return values
+      .filter(row => row[0] && row[0].toString().trim() !== '')
+      .map((row: any[]) => ({
+        id: String(row[0]).trim(),
+        name: row[1]
     }));
   } catch (error) {
     console.error('Error fetching palets:', error);
@@ -55,12 +61,14 @@ export const fetchPalets = async (): Promise<Palet[]> => {
 // Fetch cajas from the "CAJAS" sheet
 export const fetchCajas = async (): Promise<Caja[]> => {
   try {
-    const lastRow = await sheetsApi.getLastRowWithData('CAJAS');
-    const values = await sheetsApi.fetchSheet(`CAJAS!A2:B${lastRow}`);
+      // Usar un rango fijo grande (ej: hasta fila 1000) en lugar de lastRow
+    const values = await sheetsApi.fetchSheet('CAJAS!A2:B1000');
     
-    return values.filter(row => row[0]).map((row: any[]) => ({
-      id: String(row[0]).trim(),
-      name: row[1]
+    return values
+      .filter(row => row[0] && row[0].toString().trim() !== '')
+      .map((row: any[]) => ({
+        id: String(row[0]).trim(),
+        name: row[1]
     }));
   } catch (error) {
     console.error('Error fetching cajas:', error);
@@ -71,6 +79,16 @@ export const fetchCajas = async (): Promise<Caja[]> => {
 // Save a new order - creates one row per product
 export const saveOrder = async (order: Order): Promise<Order> => {
   try {
+    const currentDate = new Date().toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false // Para usar formato 24 horas
+    });
+
     const values = order.products.map(product => [
       order.receptionNumber,      // N SOLICITUD
       order.clientCIF,           // CIF_CLIENTE
@@ -80,14 +98,20 @@ export const saveOrder = async (order: Order): Promise<Order> => {
       product.paletQuantity,     // CANT (Palet)
       product.caja.name,         // CAJAS
       product.cajaQuantity,      // CANT (Cajas)
-      order.status,             // Status
-      order.orderNumber,        // N Pedido
-      order.provider,           // Proveedor
-      order.createdAt           // Fecha
+      'Pendiente',              // Status (default)
+      '',                       // N Pedido (empty)
+      '',                       // Proveedor (empty)
+      currentDate               // Fecha actual
     ]);
 
     await sheetsApi.appendToSheet('PEDIDOS!A2:L', values);
-    return order;
+    return {
+      ...order,
+      status: 'Pendiente',
+      orderNumber: '',
+      provider: '',
+      createdAt: currentDate
+    };
   } catch (error) {
     console.error('Error saving order:', error);
     throw error;
@@ -100,6 +124,12 @@ export const updateOrder = async (order: Order): Promise<Order> => {
     // First, delete all rows for this order
     await sheetsApi.deleteOrderRows(order.receptionNumber, order.clientCIF);
     
+    const currentDate = new Date().toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
     // Then insert new rows for each product
     const values = order.products.map(product => [
       order.receptionNumber,
@@ -110,14 +140,17 @@ export const updateOrder = async (order: Order): Promise<Order> => {
       product.paletQuantity,
       product.caja.name,
       product.cajaQuantity,
-      order.status,
-      order.orderNumber,
-      order.provider,
-      order.createdAt
+      order.status || 'Pendiente',
+      order.orderNumber || '',
+      order.provider || '',
+      currentDate
     ]);
 
     await sheetsApi.appendToSheet('PEDIDOS!A2:L', values);
-    return order;
+    return {
+      ...order,
+      createdAt: currentDate
+    };
   } catch (error) {
     console.error('Error updating order:', error);
     throw error;
@@ -127,13 +160,12 @@ export const updateOrder = async (order: Order): Promise<Order> => {
 // Fetch orders - groups rows by receptionNumber and clientCIF
 export const fetchPedidos = async (): Promise<Order[]> => {
   try {
-    const lastRow = await sheetsApi.getLastRowWithData('PEDIDOS');
-    const values = await sheetsApi.fetchSheet(`PEDIDOS!A2:L${lastRow}`);
+    const values = await sheetsApi.fetchSheet('PEDIDOS!A2:L1000');
     
     // Group rows by receptionNumber and clientCIF
     const orderMap = new Map<string, Order>();
     
-    values.filter(row => row[0]).forEach((row: any[]) => {
+    values.filter(row => row[0] && row[0].toString().trim() !== '').forEach((row: any[]) => {
       const key = `${row[0]}_${row[1]}`; // receptionNumber_clientCIF
       
       const productLine: ProductLine = {
@@ -156,7 +188,7 @@ export const fetchPedidos = async (): Promise<Order[]> => {
           status: row[8] || 'Pendiente',
           orderNumber: row[9] || '',
           provider: row[10] || '',
-          createdAt: row[11] || new Date().toISOString()
+          createdAt: row[11] || new Date().toLocaleDateString('es-ES')
         });
       }
     });

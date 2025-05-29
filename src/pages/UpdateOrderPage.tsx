@@ -25,11 +25,6 @@ const UpdateOrderPage = () => {
     const cleanCif = cif.trim().toUpperCase();
     const cleanReceptionNumber = receptionNumber.trim().toUpperCase();
     
-    console.log('Búsqueda normalizada:', {
-      cif: cleanCif,
-      receptionNumber: cleanReceptionNumber
-    });
-    
     if (!cleanCif || !cleanReceptionNumber) {
       toast({
         title: "Campos incompletos",
@@ -38,8 +33,6 @@ const UpdateOrderPage = () => {
       });
       return;
     }
-
-    console.log('Buscando pedido:', { cleanCif, cleanReceptionNumber });
     
     try {
       const order = getOrderByNumber(cleanReceptionNumber);
