@@ -89,7 +89,7 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
 
     try {
       // Generate a new reception number (in a real app this might come from the backend)
-      const receptionNumber = `PED-${Date.now().toString().slice(-4)}`;
+      const receptionNumber = `P-${Date.now().toString().slice(-4)}`;
       
       const newOrder: Order = {
         receptionNumber,

@@ -137,6 +137,7 @@ const UpdateOrderPage = () => {
                 value={cif} 
                 onChange={(e) => setCif(e.target.value)}
                 placeholder="Ej: B12345678"
+                className="placeholder:text-muted-foreground/50" 
               />
             </div>
             <div className="grid gap-2">
@@ -146,6 +147,7 @@ const UpdateOrderPage = () => {
                 value={receptionNumber} 
                 onChange={(e) => setReceptionNumber(e.target.value)}
                 placeholder="Ej: REC-123456"
+                className="placeholder:text-muted-foreground/50" 
               />
             </div>
           </CardContent>
@@ -218,7 +220,7 @@ const UpdateOrderPage = () => {
               >
                 {isSubmitting ? 'Guardando...' : (
                   <>
-                    <Save className="h-4 w-4" /> Guardar Cambios
+                    <Save className="h-4 w-4" /> Enviar Cambios
                   </>
                 )}
               </Button>

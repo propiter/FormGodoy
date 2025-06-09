@@ -25,14 +25,15 @@ export const fetchClientes = async (): Promise<Client[]> => {
 // Fetch products from the "PRODUCTOS" sheet
 export const fetchProductos = async (): Promise<Product[]> => {
   try {
-    // Usar un rango fijo grande (ej: hasta fila 1000) en lugar de lastRow
-    const values = await sheetsApi.fetchSheet('PRODUCTOS!A2:B1000');
+    // Usar un rango fijo grande (ej: hasta fila 1000) para incluir la nueva columna CATEGORIA
+    const values = await sheetsApi.fetchSheet('PRODUCTOS!A2:C1000');
     
     return values
       .filter(row => row[0] && row[0].toString().trim() !== '')
       .map((row: any[]) => ({
         id: String(row[0]).trim(),
-        name: row[1]
+        name: row[1],
+        category: row[2] ? String(row[2]).trim() : 'OTROS' // New category column
       }));
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -169,7 +170,7 @@ export const fetchPedidos = async (): Promise<Order[]> => {
       const key = `${row[0]}_${row[1]}`; // receptionNumber_clientCIF
       
       const productLine: ProductLine = {
-        product: { id: '', name: row[3] },
+        product: { id: '', name: row[3], category: '' }, // Category not stored in PEDIDOS sheet
         palet: { id: '', name: row[4] },
         paletQuantity: Number(row[5]),
         caja: { id: '', name: row[6] },

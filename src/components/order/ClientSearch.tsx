@@ -70,6 +70,7 @@ const ClientSearch = () => {
             value={cif}
             onChange={(e) => setCif(e.target.value)}
             onKeyDown={handleKeyDown}
+            className="placeholder:text-muted-foreground/50" 
           />
         </div>
         <Button 

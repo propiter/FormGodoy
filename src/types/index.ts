@@ -11,6 +11,7 @@ export interface Client {
 export interface Product {
   id: string;
   name: string;
+  category?: string;
 }
 
 // Palet type - represents a row in the PALETS sheet

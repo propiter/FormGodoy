@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import CategorySelector from './CategorySelector'; // Import CategorySelector
 
 interface ProductLineFormProps {
   initialValues?: ProductLine;
@@ -24,7 +25,7 @@ const ProductLineForm = ({
   onCancel,
   isEditing = false
 }: ProductLineFormProps) => {
-  const { products, palets, cajas } = useData();
+  const { products, palets, cajas, categories } = useData(); // Get categories from context
   
   // Local state for form fields
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -32,6 +33,7 @@ const ProductLineForm = ({
   const [paletQuantity, setPaletQuantity] = useState(1);
   const [selectedCaja, setSelectedCaja] = useState<Caja | null>(null);
   const [cajaQuantity, setCajaQuantity] = useState(1);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // State for selected category
   
   // Form validation
   const [errors, setErrors] = useState({
@@ -41,6 +43,11 @@ const ProductLineForm = ({
     caja: false,
     cajaQuantity: false
   });
+
+  // Filtered products based on selected category
+  const filteredProducts = selectedCategory
+    ? products.filter(p => p.category === selectedCategory)
+    : products;
 
   // Handle palet quantity input changes
   const handlePaletQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,8 +75,14 @@ const ProductLineForm = ({
       setPaletQuantity(initialValues.paletQuantity);
       setSelectedCaja(initialValues.caja);
       setCajaQuantity(initialValues.cajaQuantity);
+      setSelectedCategory(initialValues.product.category || null); // Set initial category if available
+    } else {
+      // Clear product selection if category changes and current product is not in new category
+      if (selectedProduct && selectedCategory && selectedProduct.category !== selectedCategory) {
+        setSelectedProduct(null);
+      }
     }
-  }, [initialValues]);
+  }, [initialValues, selectedCategory, selectedProduct]);
 
   const validate = (): boolean => {
     const newErrors = {
@@ -101,7 +114,16 @@ const ProductLineForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <CategorySelector
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={(category) => {
+          setSelectedCategory(category);
+          setSelectedProduct(null); // Clear product selection when category changes
+        }}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="product">
@@ -119,11 +141,17 @@ const ProductLineForm = ({
               <SelectValue placeholder="Seleccionar producto" />
             </SelectTrigger>
             <SelectContent>
-              {products.map((product) => (
-                <SelectItem key={product.id} value={product.id}>
-                  {product.name}
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-products" disabled>
+                  No hay productos en esta categoría
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
           {errors.product && (

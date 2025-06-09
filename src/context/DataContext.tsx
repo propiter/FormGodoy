@@ -1,6 +1,7 @@
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { fetchClientes, fetchProductos, fetchPalets, fetchCajas, fetchPedidos } from '@/lib/api';
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
 import { Client, Product, Palet, Caja, Order } from '@/types';
+import { fetchClientes, fetchProductos, fetchPalets, fetchCajas, fetchPedidos } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface DataContextType {
   clients: Client[];
@@ -8,6 +9,7 @@ interface DataContextType {
   palets: Palet[];
   cajas: Caja[];
   orders: Order[];
+  categories: string[]; // Added categories
   loading: boolean;
   error: string | null;
   refreshData: () => Promise<void>;
@@ -35,12 +37,15 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   const [palets, setPalets] = useState<Palet[]>([]);
   const [cajas, setCajas] = useState<Caja[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [categories, setCategories] = useState<string[]>([]); // State for categories
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const fetchAllData = async () => {
+  const refreshData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
       const [clientsData, productsData, paletsData, cajasData, ordersData] = await Promise.all([
         fetchClientes(),
         fetchProductos(),
@@ -48,24 +53,32 @@ export const DataProvider = ({ children }: DataProviderProps) => {
         fetchCajas(),
         fetchPedidos()
       ]);
-
       setClients(clientsData);
       setProducts(productsData);
       setPalets(paletsData);
       setCajas(cajasData);
       setOrders(ordersData);
-      setError(null);
+      // Extract unique categories and ensure they are all strings
+      const productCategories = productsData.map(p => p.category).filter(c => typeof c === 'string') as string[];
+      const uniqueCategories = Array.from(new Set(productCategories));
+      setCategories(uniqueCategories.sort()); // Sort categories alphabetically
+
     } catch (err) {
-      setError('Error al cargar los datos. Por favor, intente de nuevo.');
-      console.error('Error fetching data:', err);
+      console.error("Failed to fetch data:", err);
+      setError("Failed to load data. Please try again.");
+      toast({
+        title: "Error de carga",
+        description: "No se pudieron cargar los datos. Intente recargar la página.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    refreshData();
+  }, [refreshData]);
 
   const getClientByCIF = (cif: string) => {
     return clients.find(client => client.cif === cif);
@@ -81,18 +94,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
 
   return (
     <DataContext.Provider
-      value={{
-        clients,
-        products,
-        palets,
-        cajas,
-        orders,
-        loading,
-        error,
-        refreshData: fetchAllData,
-        getClientByCIF,
-        getOrderByNumber
-      }}
+      value={{ clients, products, palets, cajas, orders, categories, loading, error, refreshData, getClientByCIF, getOrderByNumber }}
     >
       {children}
     </DataContext.Provider>
