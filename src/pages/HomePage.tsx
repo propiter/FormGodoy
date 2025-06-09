@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import { Package, Edit, PlusCircle, BarChart3 } from 'lucide-react';
+import { Edit, PlusCircle, BarChart3 } from 'lucide-react';
 
 const HomePage = () => {
   return (
     <div className="space-y-8 animate-fadeIn">
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-4">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
           Sistema de Gestión de Pedidos
         </h1>
@@ -16,7 +16,7 @@ const HomePage = () => {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pt-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 pt-6">
         <Card className="transition-all duration-300 hover:shadow-md">
           <CardHeader className="space-y-1">
             <div className="flex items-center gap-2">
@@ -29,7 +29,7 @@ const HomePage = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm">
-              Busca clientes por CIF, selecciona productos, palets y cajas, y guarda el pedido en Google Sheets.
+              Busca el cliente por # CIF, selecciona productos, palets y cajas, y envia el pedido.
             </p>
           </CardContent>
           <CardFooter>
@@ -65,7 +65,7 @@ const HomePage = () => {
           </CardFooter>
         </Card>
 
-        <Card className="transition-all duration-300 hover:shadow-md">
+        {/* <Card className="transition-all duration-300 hover:shadow-md">
           <CardHeader className="space-y-1">
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
@@ -85,7 +85,7 @@ const HomePage = () => {
               Próximamente
             </Button>
           </CardFooter>
-        </Card>
+        </Card> */}
 
         <Card className="md:col-span-2 lg:col-span-3 transition-all duration-300 hover:shadow-md">
           <CardHeader className="space-y-1">
@@ -102,7 +102,7 @@ const HomePage = () => {
               <div>
                 <h3 className="font-medium">1. Crear un Nuevo Pedido</h3>
                 <p className="text-sm text-muted-foreground">
-                  Ingresa el CIF del cliente, busca y añade productos, selecciona palets y cajas, y guarda el pedido.
+                  Ingresa el CIF del cliente, busca y añade productos, selecciona palets y cajas, y envia el pedido.
                 </p>
               </div>
               

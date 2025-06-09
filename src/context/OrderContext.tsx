@@ -1,13 +1,16 @@
-import { createContext, useContext, ReactNode, useState } from 'react';
+import { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { Client, ProductLine, Order } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { saveOrder, updateOrder } from '@/lib/api';
+import { OrderConfirmationModal } from '@/components/order/OrderConfirmationModal';
 
 interface OrderContextType {
   client: Client | null;
   productLines: ProductLine[];
   isEditMode: boolean;
   currentOrderNumber: string | null;
+  lastOrderNumber: string | null;
+  showConfirmation: boolean;
   setClient: (client: Client | null) => void;
   addProductLine: (line: ProductLine) => void;
   updateProductLine: (index: number, line: ProductLine) => void;
@@ -16,6 +19,7 @@ interface OrderContextType {
   submitOrder: () => Promise<Order | undefined>;
   startEditOrder: (order: Order) => void;
   updateExistingOrder: () => Promise<Order | undefined>;
+  handleCloseModal: () => void;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -37,6 +41,8 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
   const [productLines, setProductLines] = useState<ProductLine[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentOrderNumber, setCurrentOrderNumber] = useState<string | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [lastOrderNumber, setLastOrderNumber] = useState<string | null>(null);
   const { toast } = useToast();
 
   const clearOrder = () => {
@@ -83,7 +89,7 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
 
     try {
       // Generate a new reception number (in a real app this might come from the backend)
-      const receptionNumber = `REC-${Date.now().toString().slice(-6)}`;
+      const receptionNumber = `PED-${Date.now().toString().slice(-4)}`;
       
       const newOrder: Order = {
         receptionNumber,
@@ -98,12 +104,12 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
 
       const savedOrder = await saveOrder(newOrder);
       
-      toast({
-        title: "Pedido creado",
-        description: `Pedido #${receptionNumber} guardado correctamente.`,
-      });
+      // Show the confirmation modal
+      setLastOrderNumber(receptionNumber);
+      setShowConfirmation(true);
       
-      clearOrder();
+      // Clear the form but keep the client if they want to make another order
+      setProductLines([]);
       return savedOrder;
     } catch (error) {
       console.error("Error saving order:", error);
@@ -179,6 +185,10 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
     }
   };
 
+  const handleCloseModal = useCallback(() => {
+    setShowConfirmation(false);
+  }, []);
+
   return (
     <OrderContext.Provider
       value={{
@@ -193,10 +203,19 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
         clearOrder,
         submitOrder,
         startEditOrder,
-        updateExistingOrder
+        updateExistingOrder,
+        showConfirmation,
+        lastOrderNumber,
+        handleCloseModal
       }}
     >
       {children}
+      {showConfirmation && lastOrderNumber && (
+        <OrderConfirmationModal 
+          orderNumber={lastOrderNumber} 
+          onClose={handleCloseModal} 
+        />
+      )}
     </OrderContext.Provider>
   );
 };

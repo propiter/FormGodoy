@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useOrder } from '@/context/OrderContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import ProductLineForm from './ProductLineForm';
 import { ProductLine } from '@/types';
 
@@ -61,7 +61,7 @@ const ProductLinesManager = () => {
             <div className="col-span-1">Cant.</div>
             <div className="col-span-2">Caja</div>
             <div className="col-span-1">Cant.</div>
-            <div className="col-span-2">Acciones</div>
+            <div className="col-span-2 hidden md:block">Acciones</div>
           </div>
           
           {productLines.map((line, index) => (
@@ -77,20 +77,31 @@ const ProductLinesManager = () => {
                 <div className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-4">
                     <p className="font-medium">{line.product.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{line.product.description}</p>
                   </div>
                   <div className="col-span-2 truncate">{line.palet.name}</div>
                   <div className="col-span-1">{line.paletQuantity}</div>
                   <div className="col-span-2 truncate">{line.caja.name}</div>
                   <div className="col-span-1">{line.cajaQuantity}</div>
-                  <div className="col-span-2 flex space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => handleEdit(index)}>
-                      Editar
-                    </Button>
-                    <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleDelete(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {/* Acciones en escritorio y tablet */}
+<div className="col-span-2 hidden md:flex space-x-2 justify-end">
+  <Button size="sm" variant="outline" onClick={() => handleEdit(index)}>
+    <Pencil className="h-4 w-4" />
+  </Button>
+  <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleDelete(index)}>
+    <Trash2 className="h-4 w-4" />
+  </Button>
+</div>
+
+{/* Acciones en móvil debajo */}
+<div className="col-span-12 md:hidden mt-2 flex justify-end space-x-2">
+  <Button size="sm" variant="outline" onClick={() => handleEdit(index)}>
+    <Pencil className="h-4 w-4" />
+  </Button>
+  <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleDelete(index)}>
+    <Trash2 className="h-4 w-4" />
+  </Button>
+</div>
+
                 </div>
               )}
             </div>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ProductLine, Product, Palet, Caja } from '@/types';
 import {
@@ -43,6 +42,24 @@ const ProductLineForm = ({
     cajaQuantity: false
   });
 
+  // Handle palet quantity input changes
+  const handlePaletQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0) {
+      setPaletQuantity(value);
+      setErrors(prev => ({ ...prev, paletQuantity: false }));
+    }
+  };
+
+  // Handle caja quantity input changes
+  const handleCajaQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0) {
+      setCajaQuantity(value);
+      setErrors(prev => ({ ...prev, cajaQuantity: false }));
+    }
+  };
+
   // Reset form when initialValues change
   useEffect(() => {
     if (initialValues) {
@@ -75,9 +92,9 @@ const ProductLineForm = ({
     const productLine: ProductLine = {
       product: selectedProduct,
       palet: selectedPalet,
-      paletQuantity,
+      paletQuantity: paletQuantity,
       caja: selectedCaja,
-      cajaQuantity
+      cajaQuantity: cajaQuantity
     };
     
     onSubmit(productLine);
@@ -146,19 +163,19 @@ const ProductLineForm = ({
           <Label htmlFor="paletQuantity">
             Cantidad de Palets <span className="text-destructive">*</span>
           </Label>
-          <Input
+          <input
             id="paletQuantity"
             type="number"
-            min="1"
+            min="0"
             value={paletQuantity}
-            onChange={(e) => {
-              setPaletQuantity(parseInt(e.target.value) || 0);
-              setErrors(prev => ({ ...prev, paletQuantity: false }));
-            }}
-            className={errors.paletQuantity ? "border-destructive" : ""}
+            onChange={handlePaletQuantityChange}
+            placeholder="0"
+            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-white border-gray-300 focus:ring-2 focus:ring-primary/50 ${
+              errors.paletQuantity ? 'border-destructive' : ''
+            }`}
           />
           {errors.paletQuantity && (
-            <p className="text-xs text-destructive">La cantidad debe ser al menos 1</p>
+            <p className="text-xs text-destructive">Ingrese la cantidad de palets</p>
           )}
         </div>
 
@@ -194,19 +211,19 @@ const ProductLineForm = ({
           <Label htmlFor="cajaQuantity">
             Cantidad de Cajas <span className="text-destructive">*</span>
           </Label>
-          <Input
+          <input
             id="cajaQuantity"
             type="number"
-            min="1"
+            min="0"
             value={cajaQuantity}
-            onChange={(e) => {
-              setCajaQuantity(parseInt(e.target.value) || 0);
-              setErrors(prev => ({ ...prev, cajaQuantity: false }));
-            }}
-            className={errors.cajaQuantity ? "border-destructive" : ""}
+            onChange={handleCajaQuantityChange}
+            placeholder="0"
+            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-white border-gray-300 focus:ring-2 focus:ring-primary/50 ${
+              errors.cajaQuantity ? 'border-destructive' : ''
+            }`}
           />
           {errors.cajaQuantity && (
-            <p className="text-xs text-destructive">La cantidad debe ser al menos 1</p>
+            <p className="text-xs text-destructive">Ingrese la cantidad de cajas</p>
           )}
         </div>
       </div>

@@ -20,7 +20,7 @@ export function formatDate(date: string | Date): string {
 // Function to generate a reception number
 export function generateReceptionNumber(): string {
   const prefix = 'REC-';
-  const timestamp = Date.now().toString().slice(-6);
+  const timestamp = Date.now().toString().slice(-4);
   return `${prefix}${timestamp}`;
 }
 
