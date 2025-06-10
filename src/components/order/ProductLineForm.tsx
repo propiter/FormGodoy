@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import CategorySelector from './CategorySelector'; // Import CategorySelector
+import CategorySelector from './CategorySelector';
 
 interface ProductLineFormProps {
   initialValues?: ProductLine;
@@ -25,17 +25,15 @@ const ProductLineForm = ({
   onCancel,
   isEditing = false
 }: ProductLineFormProps) => {
-  const { products, palets, cajas, categories } = useData(); // Get categories from context
+  const { products, palets, cajas, categories } = useData();
   
-  // Local state for form fields
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedPalet, setSelectedPalet] = useState<Palet | null>(null);
-  const [paletQuantity, setPaletQuantity] = useState(1);
+  const [paletQuantity, setPaletQuantity] = useState<string | number>(initialValues?.paletQuantity ?? 1);
   const [selectedCaja, setSelectedCaja] = useState<Caja | null>(null);
-  const [cajaQuantity, setCajaQuantity] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // State for selected category
+  const [cajaQuantity, setCajaQuantity] = useState<string | number>(initialValues?.cajaQuantity ?? 1);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Form validation
   const [errors, setErrors] = useState({
     product: false,
     palet: false,
@@ -44,30 +42,38 @@ const ProductLineForm = ({
     cajaQuantity: false
   });
 
-  // Filtered products based on selected category
   const filteredProducts = selectedCategory
     ? products.filter(p => p.category === selectedCategory)
     : products;
 
-  // Handle palet quantity input changes
   const handlePaletQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-    if (!isNaN(value) && value >= 0) {
-      setPaletQuantity(value);
-      setErrors(prev => ({ ...prev, paletQuantity: false }));
+    const inputValue = e.target.value;
+    if (inputValue === '') {
+      setPaletQuantity('');
+      setErrors(prev => ({ ...prev, paletQuantity: true })); // Assuming empty is invalid
+    } else {
+      const numValue = parseInt(inputValue, 10);
+      if (!isNaN(numValue) && numValue >= 0) {
+        setPaletQuantity(numValue);
+        setErrors(prev => ({ ...prev, paletQuantity: numValue < 1 }));
+      }
     }
   };
 
-  // Handle caja quantity input changes
   const handleCajaQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-    if (!isNaN(value) && value >= 0) {
-      setCajaQuantity(value);
-      setErrors(prev => ({ ...prev, cajaQuantity: false }));
+    const inputValue = e.target.value;
+    if (inputValue === '') {
+      setCajaQuantity('');
+      setErrors(prev => ({ ...prev, cajaQuantity: true })); // Assuming empty is invalid
+    } else {
+      const numValue = parseInt(inputValue, 10);
+      if (!isNaN(numValue) && numValue >= 0) {
+        setCajaQuantity(numValue);
+        setErrors(prev => ({ ...prev, cajaQuantity: numValue < 1 }));
+      }
     }
   };
 
-  // Reset form when initialValues change
   useEffect(() => {
     if (initialValues) {
       setSelectedProduct(initialValues.product);
@@ -75,9 +81,12 @@ const ProductLineForm = ({
       setPaletQuantity(initialValues.paletQuantity);
       setSelectedCaja(initialValues.caja);
       setCajaQuantity(initialValues.cajaQuantity);
-      setSelectedCategory(initialValues.product.category || null); // Set initial category if available
+      setSelectedCategory(initialValues.product.category || null);
     } else {
-      // Clear product selection if category changes and current product is not in new category
+      // Reset to defaults if not editing (e.g. for a new item after submission)
+      // This part depends on how the form is reset externally.
+      // For now, initial useState handles new item defaults.
+      // If category changes, clear product selection
       if (selectedProduct && selectedCategory && selectedProduct.category !== selectedCategory) {
         setSelectedProduct(null);
       }
@@ -85,12 +94,15 @@ const ProductLineForm = ({
   }, [initialValues, selectedCategory, selectedProduct]);
 
   const validate = (): boolean => {
+    const currentPaletQuantity = paletQuantity === '' ? 0 : Number(paletQuantity);
+    const currentCajaQuantity = cajaQuantity === '' ? 0 : Number(cajaQuantity);
+
     const newErrors = {
       product: !selectedProduct,
       palet: !selectedPalet,
-      paletQuantity: paletQuantity < 1,
+      paletQuantity: currentPaletQuantity < 1,
       caja: !selectedCaja,
-      cajaQuantity: cajaQuantity < 1
+      cajaQuantity: currentCajaQuantity < 1
     };
     
     setErrors(newErrors);
@@ -105,9 +117,9 @@ const ProductLineForm = ({
     const productLine: ProductLine = {
       product: selectedProduct,
       palet: selectedPalet,
-      paletQuantity: paletQuantity,
+      paletQuantity: paletQuantity === '' ? 0 : Number(paletQuantity),
       caja: selectedCaja,
-      cajaQuantity: cajaQuantity
+      cajaQuantity: cajaQuantity === '' ? 0 : Number(cajaQuantity)
     };
     
     onSubmit(productLine);
@@ -120,7 +132,7 @@ const ProductLineForm = ({
         selectedCategory={selectedCategory}
         onSelectCategory={(category) => {
           setSelectedCategory(category);
-          setSelectedProduct(null); // Clear product selection when category changes
+          setSelectedProduct(null); 
         }}
       />
 
@@ -194,16 +206,16 @@ const ProductLineForm = ({
           <input
             id="paletQuantity"
             type="number"
-            min="0"
+            min="0" // min="0" allows 0, validation ensures >= 1 if needed
             value={paletQuantity}
             onChange={handlePaletQuantityChange}
             placeholder="0"
-            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-white border-gray-300 focus:ring-2 focus:ring-primary/50 ${
+            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:ring-2 focus:ring-primary/50 ${
               errors.paletQuantity ? 'border-destructive' : ''
             }`}
           />
           {errors.paletQuantity && (
-            <p className="text-xs text-destructive">Ingrese la cantidad de palets</p>
+            <p className="text-xs text-destructive">Ingrese la cantidad de palets (mínimo 1)</p>
           )}
         </div>
 
@@ -242,16 +254,16 @@ const ProductLineForm = ({
           <input
             id="cajaQuantity"
             type="number"
-            min="0"
+            min="0" // min="0" allows 0, validation ensures >= 1 if needed
             value={cajaQuantity}
             onChange={handleCajaQuantityChange}
             placeholder="0"
-            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-white border-gray-300 focus:ring-2 focus:ring-primary/50 ${
+            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:ring-2 focus:ring-primary/50 ${
               errors.cajaQuantity ? 'border-destructive' : ''
             }`}
           />
           {errors.cajaQuantity && (
-            <p className="text-xs text-destructive">Ingrese la cantidad de cajas</p>
+            <p className="text-xs text-destructive">Ingrese la cantidad de cajas (mínimo 1)</p>
           )}
         </div>
       </div>

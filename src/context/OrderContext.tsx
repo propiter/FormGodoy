@@ -1,24 +1,24 @@
 import { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { Client, ProductLine, Order } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { saveOrder, updateOrder } from '@/lib/api';
+import { saveOrder, updateOrder } from '@/lib/api'; // updateOrder here is the one for Google Sheets
 import { OrderConfirmationModal } from '@/components/order/OrderConfirmationModal';
 
 interface OrderContextType {
   client: Client | null;
   productLines: ProductLine[];
   isEditMode: boolean;
-  currentOrderNumber: string | null;
-  lastOrderNumber: string | null;
+  currentOrderNumber: string | null; // Stores receptionNumber of the order being edited
+  lastOrderNumber: string | null; // For new order confirmation
   showConfirmation: boolean;
   setClient: (client: Client | null) => void;
   addProductLine: (line: ProductLine) => void;
   updateProductLine: (index: number, line: ProductLine) => void;
   removeProductLine: (index: number) => void;
   clearOrder: () => void;
-  submitOrder: () => Promise<Order | undefined>;
-  startEditOrder: (order: Order) => void;
-  updateExistingOrder: () => Promise<Order | undefined>;
+  submitOrder: () => Promise<Order | undefined>; // For new orders
+  startEditOrder: (order: Order) => void; // To load an existing order into the form
+  updateExistingOrder: () => Promise<Order | undefined>; // Old method for GSheets, not used by new webhook flow
   handleCloseModal: () => void;
 }
 
@@ -45,12 +45,14 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
   const [lastOrderNumber, setLastOrderNumber] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const clearOrder = () => {
+  const clearOrder = useCallback(() => { // Wrapped in useCallback
     setClient(null);
     setProductLines([]);
     setIsEditMode(false);
     setCurrentOrderNumber(null);
-  };
+    // lastOrderNumber and showConfirmation are related to new order flow, not reset here
+  }, []);
+
 
   const addProductLine = (line: ProductLine) => {
     setProductLines(prev => [...prev, line]);
@@ -68,6 +70,7 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
     setProductLines(prev => prev.filter((_, i) => i !== index));
   };
 
+  // For creating NEW orders (uses Google Sheets via saveOrder)
   const submitOrder = async (): Promise<Order | undefined> => {
     if (!client) {
       toast({
@@ -88,8 +91,7 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
     }
 
     try {
-      // Generate a new reception number (in a real app this might come from the backend)
-      const receptionNumber = `P-${Date.now().toString().slice(-4)}`;
+      const receptionNumber = `PED-${Date.now().toString().slice(-4)}`;
       
       const newOrder: Order = {
         receptionNumber,
@@ -97,17 +99,17 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
         clientName: client.name,
         products: productLines,
         status: "Pendiente",
-        createdAt: new Date().toISOString()
+        orderNumber: "",
+        provider: "",
+        createdAt: new Date().toISOString() // Consistent ISO string
       };
 
-      const savedOrder = await saveOrder(newOrder);
+      const savedOrder = await saveOrder(newOrder); // saveOrder writes to Google Sheets
       
-      // Show the confirmation modal
       setLastOrderNumber(receptionNumber);
       setShowConfirmation(true);
       
-      // Clear the form but keep the client if they want to make another order
-      setProductLines([]);
+      setProductLines([]); // Clear products, keep client for potentially another order
       return savedOrder;
     } catch (error) {
       console.error("Error saving order:", error);
@@ -119,66 +121,68 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
     }
   };
 
+  // To load an existing order's data into the form for editing
   const startEditOrder = (order: Order) => {
     setIsEditMode(true);
-    setCurrentOrderNumber(order.receptionNumber);
+    setCurrentOrderNumber(order.receptionNumber); // Store the ID of the order being edited
     setClient({
       cif: order.clientCIF,
       name: order.clientName,
-      // We would populate more client fields from actual data
-      address: '',
-      phone: '',
-      email: ''
+      address: order.client?.address || '', // Assuming client details might be part of Order or fetched separately
+      phone: order.client?.phone || '',
+      email: order.client?.email || ''
     });
     setProductLines(order.products);
   };
 
+  // OLD method for updating orders via Google Sheets.
+  // The new webhook flow in UpdateOrderPage.tsx bypasses this.
   const updateExistingOrder = async (): Promise<Order | undefined> => {
     if (!client || !currentOrderNumber) {
       toast({
         title: "Error",
-        description: "Información de pedido incompleta.",
+        description: "Información de pedido incompleta para la actualización (método antiguo).",
         variant: "destructive"
       });
       return;
     }
 
     if (productLines.length === 0) {
-      toast({
-        title: "Error",
-        description: "Debe agregar al menos un producto al pedido.",
-        variant: "destructive"
-      });
+      // ... (same validation as submitOrder)
       return;
     }
 
     try {
-      const updatedOrder: Order = {
+      const orderToUpdate: Order = {
         receptionNumber: currentOrderNumber,
         clientCIF: client.cif,
         clientName: client.name,
         products: productLines,
-        status: "Pendiente", // Maintain status
-        createdAt: new Date().toISOString() // Update timestamp
+        status: "Pendiente", // Or get from a status field if available
+        orderNumber: "", // Or get from field
+        provider: "", // Or get from field
+        createdAt: new Date().toISOString() 
       };
 
-      const result = await updateOrder(updatedOrder);
+      // updateOrder is the one from lib/api.ts that writes to Google Sheets
+      const result = await updateOrder(orderToUpdate); 
       
       toast({
-        title: "Pedido actualizado",
-        description: `Pedido #${currentOrderNumber} actualizado correctamente.`,
+        title: "Pedido actualizado (Google Sheets)",
+        description: `Pedido #${currentOrderNumber} actualizado correctamente en Google Sheets.`,
       });
       
       clearOrder();
       return result;
     } catch (error) {
-      console.error("Error updating order:", error);
+      console.error("Error updating order (Google Sheets):", error);
       toast({
         title: "Error",
-        description: "Hubo un problema al actualizar el pedido. Por favor, intente de nuevo.",
+        description: "Hubo un problema al actualizar el pedido (Google Sheets).",
         variant: "destructive"
       });
     }
+    return undefined; // Ensure a Promise<Order | undefined> is returned
   };
 
   const handleCloseModal = useCallback(() => {
@@ -199,7 +203,7 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
         clearOrder,
         submitOrder,
         startEditOrder,
-        updateExistingOrder,
+        updateExistingOrder, // Kept for now, but not used by new webhook flow
         showConfirmation,
         lastOrderNumber,
         handleCloseModal
