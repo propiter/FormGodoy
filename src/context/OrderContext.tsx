@@ -97,8 +97,6 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
         clientName: client.name,
         products: productLines,
         status: "Pendiente",
-        orderNumber: "",
-        provider: "",
         createdAt: new Date().toISOString()
       };
 
@@ -161,8 +159,6 @@ export const OrderProvider = ({ children }: OrderProviderProps) => {
         clientName: client.name,
         products: productLines,
         status: "Pendiente", // Maintain status
-        orderNumber: "",
-        provider: "",
         createdAt: new Date().toISOString() // Update timestamp
       };
 

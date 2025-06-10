@@ -42,7 +42,5 @@ export interface Order {
   clientName: string;      // NOMBRE_CLIENTE
   products: ProductLine[]; // Cada producto será una fila en la hoja
   status: string;         // Status
-  orderNumber: string;    // N Pedido
-  provider: string;       // Proveedor
-  createdAt: string;      // Fecha
+  createdAt: string;      // Fecha (creation or last update timestamp from sheet)
 }

@@ -100,8 +100,6 @@ export const saveOrder = async (order: Order): Promise<Order> => {
       product.caja.name,         // CAJAS
       product.cajaQuantity,      // CANT (Cajas)
       'Pendiente',              // Status (default)
-      '',                       // N Pedido (empty)
-      '',                       // Proveedor (empty)
       currentDate               // Fecha actual
     ]);
 
@@ -109,8 +107,6 @@ export const saveOrder = async (order: Order): Promise<Order> => {
     return {
       ...order,
       status: 'Pendiente',
-      orderNumber: '',
-      provider: '',
       createdAt: currentDate
     };
   } catch (error) {
@@ -142,8 +138,6 @@ export const updateOrder = async (order: Order): Promise<Order> => {
       product.caja.name,
       product.cajaQuantity,
       order.status || 'Pendiente',
-      order.orderNumber || '',
-      order.provider || '',
       currentDate
     ]);
 
@@ -187,9 +181,7 @@ export const fetchPedidos = async (): Promise<Order[]> => {
           clientName: row[2],
           products: [productLine],
           status: row[8] || 'Pendiente',
-          orderNumber: row[9] || '',
-          provider: row[10] || '',
-          createdAt: row[11] || new Date().toLocaleDateString('es-ES')
+          createdAt: row[9] || new Date().toLocaleDateString('es-ES')
         });
       }
     });
