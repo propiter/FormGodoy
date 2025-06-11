@@ -22,7 +22,7 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-customBorder bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-        <Link to="/" className="flex items-center gap-2 text-xl font-semibold text-customText hover:text-customPrimary transition-colors">
+        <Link to="/" className="flex items-center gap-2 text-xl font-semibold text-customText hover:text-customPrimary">
           <img src={customLogo} alt="Sistema de Pedidos Logo" className="h-8 w-auto mr-2" />
           <span>Sistema de Pedidos</span>
         </Link>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { ProductLine, Product, Palet, Caja } from '@/types';
 import {
   Select,
@@ -29,9 +30,9 @@ const ProductLineForm = ({
   
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedPalet, setSelectedPalet] = useState<Palet | null>(null);
-  const [paletQuantity, setPaletQuantity] = useState<string | number>(initialValues?.paletQuantity ?? 1);
+  const [paletQuantity, setPaletQuantity] = useState<string | number>(1);
   const [selectedCaja, setSelectedCaja] = useState<Caja | null>(null);
-  const [cajaQuantity, setCajaQuantity] = useState<string | number>(initialValues?.cajaQuantity ?? 1);
+  const [cajaQuantity, setCajaQuantity] = useState<string | number>(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   const [errors, setErrors] = useState({
@@ -46,11 +47,77 @@ const ProductLineForm = ({
     ? products.filter(p => p.category === selectedCategory)
     : products;
 
+  useEffect(() => {
+    // console.log('[ProductLineForm Init Effect]', { 
+    //   hasInitialValues: !!initialValues,
+    //   productsLength: products.length,
+    //   paletsLength: palets.length,
+    //   cajasLength: cajas.length 
+    // });
+
+    // if (initialValues) {
+    //   console.log('[ProductLineForm Init Effect] initialValues.product.id:', initialValues.product.id);
+    //   console.log('[ProductLineForm Init Effect] initialValues.product.category:', initialValues.product.category);
+    //   console.log('[ProductLineForm Init Effect] initialValues.palet.id:', initialValues.palet.id);
+    //   console.log('[ProductLineForm Init Effect] initialValues.caja.id:', initialValues.caja.id);
+    // }
+    
+    if (initialValues && products.length > 0 && palets.length > 0 && cajas.length > 0) {
+      // console.log('[ProductLineForm Init Effect] Data ready, processing initialValues.');
+      const productToSet = products.find(p => p.id === initialValues.product.id) || null;
+      // console.log('[ProductLineForm Init Effect] productToSet:', productToSet);
+      setSelectedProduct(productToSet);
+      
+      const determinedCategory = productToSet?.category || initialValues.product.category || null;
+      // console.log('[ProductLineForm Init Effect] determinedCategory:', determinedCategory);
+      setSelectedCategory(determinedCategory);
+
+      const paletToSet = palets.find(p => p.id === initialValues.palet.id) || null;
+      // console.log('[ProductLineForm Init Effect] paletToSet:', paletToSet);
+      setSelectedPalet(paletToSet);
+
+      const cajaToSet = cajas.find(c => c.id === initialValues.caja.id) || null;
+      // console.log('[ProductLineForm Init Effect] cajaToSet:', cajaToSet);
+      setSelectedCaja(cajaToSet);
+      
+      setPaletQuantity(initialValues.paletQuantity);
+      setCajaQuantity(initialValues.cajaQuantity);
+      
+      setErrors({
+        product: !productToSet,
+        palet: !paletToSet,
+        paletQuantity: Number(initialValues.paletQuantity) < 1,
+        caja: !cajaToSet,
+        cajaQuantity: Number(initialValues.cajaQuantity) < 1,
+      });
+
+    } else if (!initialValues) { // Modo "Añadir Nueva Línea"
+      setSelectedProduct(null);
+      setSelectedPalet(null);
+      setPaletQuantity(1);
+      setSelectedCaja(null);
+      setCajaQuantity(1);
+      setSelectedCategory(null); 
+      setErrors({ product: false, palet: false, paletQuantity: false, caja: false, cajaQuantity: false });
+    }
+  }, [initialValues, products, palets, cajas]);
+
+
+  useEffect(() => {
+    // Si la categoría cambia y había un producto seleccionado de una categoría diferente,
+    // resetear el producto para forzar una nueva selección en la nueva categoría.
+    if (selectedProduct && selectedCategory && selectedProduct.category !== selectedCategory) {
+      setSelectedProduct(null);
+      // No es necesario resetear errores aquí, la validación lo hará al intentar enviar o al cambiar el producto.
+    }
+  }, [selectedCategory, selectedProduct]);
+
+
   const handlePaletQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     if (inputValue === '') {
       setPaletQuantity('');
-      setErrors(prev => ({ ...prev, paletQuantity: true })); // Assuming empty is invalid
+      setErrors(prev => ({ ...prev, paletQuantity: true }));
     } else {
       const numValue = parseInt(inputValue, 10);
       if (!isNaN(numValue) && numValue >= 0) {
@@ -64,7 +131,7 @@ const ProductLineForm = ({
     const inputValue = e.target.value;
     if (inputValue === '') {
       setCajaQuantity('');
-      setErrors(prev => ({ ...prev, cajaQuantity: true })); // Assuming empty is invalid
+      setErrors(prev => ({ ...prev, cajaQuantity: true }));
     } else {
       const numValue = parseInt(inputValue, 10);
       if (!isNaN(numValue) && numValue >= 0) {
@@ -73,25 +140,6 @@ const ProductLineForm = ({
       }
     }
   };
-
-  useEffect(() => {
-    if (initialValues) {
-      setSelectedProduct(initialValues.product);
-      setSelectedPalet(initialValues.palet);
-      setPaletQuantity(initialValues.paletQuantity);
-      setSelectedCaja(initialValues.caja);
-      setCajaQuantity(initialValues.cajaQuantity);
-      setSelectedCategory(initialValues.product.category || null);
-    } else {
-      // Reset to defaults if not editing (e.g. for a new item after submission)
-      // This part depends on how the form is reset externally.
-      // For now, initial useState handles new item defaults.
-      // If category changes, clear product selection
-      if (selectedProduct && selectedCategory && selectedProduct.category !== selectedCategory) {
-        setSelectedProduct(null);
-      }
-    }
-  }, [initialValues, selectedCategory, selectedProduct]);
 
   const validate = (): boolean => {
     const currentPaletQuantity = paletQuantity === '' ? 0 : Number(paletQuantity);
@@ -123,6 +171,19 @@ const ProductLineForm = ({
     };
     
     onSubmit(productLine);
+
+    if (!isEditing) {
+        setSelectedProduct(null);
+        setSelectedPalet(null);
+        setPaletQuantity(1);
+        setSelectedCaja(null);
+        setCajaQuantity(1);
+        // setSelectedCategory(null); // Opcional: resetear categoría al añadir nueva línea
+        setErrors({
+            product: false, palet: false, 
+            paletQuantity: false, caja: false, cajaQuantity: false
+        });
+    }
   };
 
   return (
@@ -132,24 +193,35 @@ const ProductLineForm = ({
         selectedCategory={selectedCategory}
         onSelectCategory={(category) => {
           setSelectedCategory(category);
-          setSelectedProduct(null); 
+          // No es necesario resetear selectedProduct aquí, el segundo useEffect lo manejará si es necesario.
         }}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="product">
+          <Label htmlFor="product-select">
             Producto <span className="text-destructive">*</span>
           </Label>
           <Select
-            value={selectedProduct?.id}
+            value={selectedProduct?.id || ""}
             onValueChange={(value) => {
-              const product = products.find(p => p.id === value);
-              if (product) setSelectedProduct(product);
-              setErrors(prev => ({ ...prev, product: false }));
+              const product = products.find(p => p.id === value); // Buscar en todos los productos
+              if (product) {
+                setSelectedProduct(product);
+                // Si el producto seleccionado tiene una categoría diferente a la actual, actualizar la categoría.
+                // Esto es importante si el filtro de categoría estaba en "Todos" o si se selecciona un producto
+                // cuya categoría no estaba previamente seleccionada.
+                if (product.category !== selectedCategory) {
+                  setSelectedCategory(product.category);
+                }
+                setErrors(prev => ({ ...prev, product: false }));
+              } else {
+                setSelectedProduct(null);
+                setErrors(prev => ({ ...prev, product: true }));
+              }
             }}
           >
-            <SelectTrigger className={errors.product ? "border-destructive" : ""}>
+            <SelectTrigger id="product-select" className={errors.product ? "border-destructive" : ""}>
               <SelectValue placeholder="Seleccionar producto" />
             </SelectTrigger>
             <SelectContent>
@@ -161,7 +233,7 @@ const ProductLineForm = ({
                 ))
               ) : (
                 <SelectItem value="no-products" disabled>
-                  No hay productos en esta categoría
+                  {selectedCategory ? "No hay productos en esta categoría" : "Seleccione una categoría primero o no hay productos"}
                 </SelectItem>
               )}
             </SelectContent>
@@ -176,7 +248,7 @@ const ProductLineForm = ({
             Palet <span className="text-destructive">*</span>
           </Label>
           <Select
-            value={selectedPalet?.id}
+            value={selectedPalet?.id || ""}
             onValueChange={(value) => {
               const palet = palets.find(p => p.id === value);
               if (palet) setSelectedPalet(palet);
@@ -203,16 +275,14 @@ const ProductLineForm = ({
           <Label htmlFor="paletQuantity">
             Cantidad de Palets <span className="text-destructive">*</span>
           </Label>
-          <input
+          <Input
             id="paletQuantity"
             type="number"
-            min="0" // min="0" allows 0, validation ensures >= 1 if needed
+            min="0"
             value={paletQuantity}
             onChange={handlePaletQuantityChange}
             placeholder="0"
-            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:ring-2 focus:ring-primary/50 ${
-              errors.paletQuantity ? 'border-destructive' : ''
-            }`}
+            className={errors.paletQuantity ? 'border-destructive' : ''}
           />
           {errors.paletQuantity && (
             <p className="text-xs text-destructive">Ingrese la cantidad de palets (mínimo 1)</p>
@@ -224,7 +294,7 @@ const ProductLineForm = ({
             Caja <span className="text-destructive">*</span>
           </Label>
           <Select
-            value={selectedCaja?.id}
+            value={selectedCaja?.id || ""}
             onValueChange={(value) => {
               const caja = cajas.find(c => c.id === value);
               if (caja) setSelectedCaja(caja);
@@ -251,16 +321,14 @@ const ProductLineForm = ({
           <Label htmlFor="cajaQuantity">
             Cantidad de Cajas <span className="text-destructive">*</span>
           </Label>
-          <input
+          <Input
             id="cajaQuantity"
             type="number"
-            min="0" // min="0" allows 0, validation ensures >= 1 if needed
+            min="0"
             value={cajaQuantity}
             onChange={handleCajaQuantityChange}
             placeholder="0"
-            className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 focus:ring-2 focus:ring-primary/50 ${
-              errors.cajaQuantity ? 'border-destructive' : ''
-            }`}
+            className={errors.cajaQuantity ? 'border-destructive' : ''}
           />
           {errors.cajaQuantity && (
             <p className="text-xs text-destructive">Ingrese la cantidad de cajas (mínimo 1)</p>
@@ -273,7 +341,7 @@ const ProductLineForm = ({
           Cancelar
         </Button>
         <Button type="submit">
-          {isEditing ? 'Actualizar' : 'Añadir'} Producto
+          {isEditing ? 'Actualizar Línea' : 'Añadir Línea'}
         </Button>
       </div>
     </form>
