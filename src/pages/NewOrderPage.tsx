@@ -6,7 +6,7 @@ import { useOrder } from '@/context/OrderContext';
 import ClientSearch from '@/components/order/ClientSearch';
 import ProductLinesManager from '@/components/order/ProductLinesManager';
 import OrderSummary from '@/components/order/OrderSummary';
-import { ArrowLeft, Save, Plus } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { Step, Stepper } from '@/components/ui/stepper';
 import { Separator } from '@/components/ui/separator';
 
@@ -94,9 +94,6 @@ const NewOrderPage = () => {
                   Añada los productos que desea incluir en el pedido.
                 </CardDescription>
               </div>
-              <Button size="sm" variant="outline" className="flex items-center gap-2 rounded-md">
-                <Plus className="h-4 w-4" /> Añadir Producto
-              </Button>
             </div>
           </CardHeader>
           <CardContent className="py-6">

@@ -149,7 +149,7 @@ const ProductLinesManager = () => {
             </Button>
          </div>
       )}
-       {!isAdding && productLines.length === 0 && !isEditing && ( // Si no hay líneas y no se está editando, mostrar el botón de añadir como principal
+       {!isAdding && productLines.length === 0 && editingIndex === null && ( // Si no hay líneas y no se está editando, mostrar el botón de añadir como principal
          <div className="pt-2">
             <Button 
             onClick={() => { setIsAdding(true); setEditingIndex(null); }}
